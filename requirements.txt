@@ -1,6 +1,0 @@
-fastapi
-uvicorn[standard]
-chainlit
-httpx
-pydantic
-python-dotenv

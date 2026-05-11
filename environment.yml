@@ -1,0 +1,16 @@
+name: lolrag
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - fastapi
+    - uvicorn[standard]
+    - chainlit
+    - httpx
+    - pydantic
+    - python-dotenv
+    - uvloop; sys_platform != "win32"
+    - winloop; sys_platform == "win32"

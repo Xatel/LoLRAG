@@ -1,5 +1,35 @@
 import httpx
 import chainlit as cl
+import asyncio
+import csv
+import logging
+import json
+import base64
+import os
+import random
+import httpx
+
+import chainlit as cl
+from chainlit.input_widget import TextInput, Switch
+from chainlit.context import init_ws_context
+from chainlit.session import WebsocketSession
+from chainlit.server import app as chainlit_server
+from fastapi import Request
+
+_stream_handler = logging.StreamHandler()
+if hasattr(_stream_handler.stream, 'reconfigure'):
+    _stream_handler.stream.reconfigure(encoding='utf-8')
+
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[
+        _stream_handler,
+        logging.FileHandler("chatbot.log", encoding="utf-8"),
+    ],
+    force=True,  # Chainlit registers root-logger handlers at import time; force=True overrides them
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 API_URL = "http://localhost:8000"
 
