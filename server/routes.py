@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from core.rag import query_rag
+from rag.rag import query_rag
 
 router = APIRouter()
 

@@ -4,6 +4,14 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Start docker containers
+echo "Starting docker containers..."
+if docker compose ps -q | grep -q .; then
+    echo "Docker containers are already running."
+else
+    echo "No running docker containers found. Starting them..."
+    docker compose up -d
+fi
 
 # Start chatbot
 echo "Starting chatbot on port 8000..."
@@ -13,7 +21,7 @@ CHATBOT_PID=$!
 echo "Chatbot started with PID: $CHATBOT_PID"
 echo "$CHATBOT_PID" > "$SCRIPT_DIR/.chatbot.pid"
 
-# Start server (Ray initialises on startup via lifespan)
+# Start server
 echo "Starting server on port 8888..."
 cd "$SCRIPT_DIR/server"
 python main.py > server.log 2>&1 &

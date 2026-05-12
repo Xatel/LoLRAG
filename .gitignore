@@ -222,3 +222,6 @@ __marimo__/
 
 # GitIgnore
 .gitignore
+
+# Chrome Driver
+/chromedriver/

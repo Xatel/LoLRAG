@@ -1,0 +1,2 @@
+include:
+  - database/postgres-pgvector/postgres-compose.yml
