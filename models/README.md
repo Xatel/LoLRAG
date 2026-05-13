@@ -1,0 +1,1 @@
+This folder handles insertion logic into database for different categories - Champions, Abilities, etc
