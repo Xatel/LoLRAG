@@ -71,6 +71,8 @@ CREATE TABLE champion_stats (
     attack_damage_per_level FLOAT,
     attack_speed FLOAT,
     attack_speed_per_level FLOAT,
+    ability_power FLOAT,
+    ability_power_per_level FLOAT,
     movement_speed FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
