@@ -20,19 +20,21 @@ class BaseModel:
             cls.columns = load_schema().get(cls.table_name, {})
 
     def __init__(self):
-        """
-        Initialize database connection.
-        Database credentials are read from environment variables.
-        """
         self.host = os.getenv("DB_HOST", "localhost")
         self.port = int(os.getenv("DB_PORT", 5432))
         self.database = os.getenv("DB_NAME", "lol_rag")
         self.user = os.getenv("DB_USER", "postgres")
         self.password = os.getenv("DB_PASSWORD", "password")
         self.connection = None
-    
+        self.id = None
+        for col in self.__class__.columns:
+            setattr(self, col, None)
+
+    # -------------------------------------------------------------------------
+    # Connection
+    # -------------------------------------------------------------------------
+
     def connect(self) -> bool:
-        """Establish database connection."""
         try:
             self.connection = psycopg2.connect(
                 host=self.host,
@@ -46,19 +48,16 @@ class BaseModel:
         except Exception as e:
             logger.error(f"Failed to connect to database: {e}")
             return False
-    
+
     def close(self) -> None:
-        """Close database connection."""
         if self.connection:
             self.connection.close()
             logger.info("Database connection closed")
-    
+
     @contextmanager
     def cursor(self):
-        """Context manager for database cursor."""
         if not self.connection:
             raise RuntimeError("Database connection not established. Call connect() first.")
-        
         cur = self.connection.cursor(cursor_factory=RealDictCursor)
         try:
             yield cur
@@ -69,9 +68,12 @@ class BaseModel:
             raise
         finally:
             cur.close()
-    
-    def query_by_id(self, table: str, id: int) -> dict:
-        """Generic query by ID."""
+
+    # -------------------------------------------------------------------------
+    # Internal DB helpers
+    # -------------------------------------------------------------------------
+
+    def _db_query_by_id(self, table: str, id: int) -> dict | None:
         try:
             with self.cursor() as cur:
                 cur.execute(f"SELECT * FROM {table} WHERE id = %s", (id,))
@@ -80,37 +82,38 @@ class BaseModel:
         except Exception as e:
             logger.error(f"Error querying {table}: {e}")
             return None
-    
-    def insert(self, table: str, data: dict) -> int:
-        """Generic insert method."""
+
+    def _db_insert(self, table: str, data: dict) -> int | None:
         try:
             with self.cursor() as cur:
-                columns = ", ".join(data.keys())
+                cols = ", ".join(data.keys())
                 placeholders = ", ".join(["%s"] * len(data))
-                values = tuple(data.values())
-                cur.execute(f"INSERT INTO {table} ({columns}) VALUES ({placeholders}) RETURNING id", values)
+                cur.execute(
+                    f"INSERT INTO {table} ({cols}) VALUES ({placeholders}) RETURNING id",
+                    tuple(data.values())
+                )
                 new_id = cur.fetchone()["id"]
                 logger.info(f"Inserted into {table} with ID: {new_id}")
                 return new_id
         except Exception as e:
             logger.error(f"Error inserting into {table}: {e}")
             return None
-    
-    def update(self, table: str, id: int, data: dict) -> bool:
-        """Generic update by ID."""
+
+    def _db_update(self, table: str, id: int, data: dict) -> bool:
         try:
             with self.cursor() as cur:
                 set_clause = ", ".join(f"{col} = %s" for col in data.keys())
-                values = (*data.values(), id)
-                cur.execute(f"UPDATE {table} SET {set_clause} WHERE id = %s", values)
+                cur.execute(
+                    f"UPDATE {table} SET {set_clause} WHERE id = %s",
+                    (*data.values(), id)
+                )
                 logger.info(f"Updated {table} ID {id}")
                 return True
         except Exception as e:
             logger.error(f"Error updating {table} ID {id}: {e}")
             return False
 
-    def delete(self, table: str, id: int) -> bool:
-        """Generic delete by ID."""
+    def _db_delete(self, table: str, id: int) -> bool:
         try:
             with self.cursor() as cur:
                 cur.execute(f"DELETE FROM {table} WHERE id = %s", (id,))
@@ -120,11 +123,49 @@ class BaseModel:
             logger.error(f"Error deleting from {table} ID {id}: {e}")
             return False
 
+    # -------------------------------------------------------------------------
+    # Public ORM-style methods (operate on self's attributes)
+    # -------------------------------------------------------------------------
+
+    def _collect(self) -> dict:
+        return {col: getattr(self, col) for col in self.__class__.columns if getattr(self, col) is not None}
+
+    def _populate(self, row: dict) -> None:
+        self.id = row.get("id")
+        for col in self.__class__.columns:
+            if col in row:
+                setattr(self, col, row[col])
+
+    def insert(self) -> int | None:
+        new_id = self._db_insert(self.table_name, self._collect())
+        if new_id is not None:
+            self.id = new_id
+        return new_id
+
+    def get_by_id(self, id: int) -> bool:
+        row = self._db_query_by_id(self.table_name, id)
+        if row:
+            self._populate(row)
+            return True
+        return False
+
+    def update(self) -> bool:
+        if self.id is None:
+            raise ValueError("Cannot update: id is not set.")
+        return self._db_update(self.table_name, self.id, self._collect())
+
+    def delete(self) -> bool:
+        if self.id is None:
+            raise ValueError("Cannot delete: id is not set.")
+        return self._db_delete(self.table_name, self.id)
+
+    # -------------------------------------------------------------------------
+    # Context manager
+    # -------------------------------------------------------------------------
+
     def __enter__(self):
-        """Support 'with' statement."""
         self.connect()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Support 'with' statement."""
         self.close()

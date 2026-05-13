@@ -5,9 +5,11 @@ RAG system for searching LoL champion data
 
 1. Create `database/postgres-pgvector/.env` with the following keys:
    ```
-   POSTGRES_USER=
-   POSTGRES_PASSWORD=
-   POSTGRES_DB=
+   DB_HOST=
+   DB_PORT=
+   DB_NAME=
+   DB_USER=
+   DB_PASSWORD=
    ```
 
 2. Start the database:
