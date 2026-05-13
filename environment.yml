@@ -16,3 +16,6 @@ dependencies:
     - winloop; sys_platform == "win32"
     - beautifulsoup4
     - psycopg2-binary
+    - "psycopg[binary]"
+    - psycopg-pool
+    - aiohttp

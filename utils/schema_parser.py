@@ -1,7 +1,7 @@
 import re
 import os
 
-_SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "database", "postgres-pgvector", "schema.sql")
+_SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "database", "postgres", "schema.sql")
 _schema_cache: dict[str, dict[str, str]] | None = None
 
 
@@ -14,7 +14,7 @@ def load_schema() -> dict[str, dict[str, str]]:
         sql = f.read()
 
     tables: dict[str, dict[str, str]] = {}
-    for match in re.finditer(r"CREATE TABLE \w+\.?(\w+)\s*\((.*?)\);", sql, re.DOTALL | re.IGNORECASE):
+    for match in re.finditer(r"CREATE TABLE (\w+)\s*\((.*?)\);", sql, re.DOTALL | re.IGNORECASE):
         table_name = match.group(1)
         columns: dict[str, str] = {}
         for line in match.group(2).splitlines():
