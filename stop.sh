@@ -4,6 +4,15 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Stop docker containers
+echo "Stopping docker containers..."
+if docker compose ps -q | grep -q .; then
+    echo "Docker containers are running. Stopping them..."
+    docker compose down
+else
+    echo "No running docker containers found."
+fi
+
 if [ -f "$SCRIPT_DIR/.server.pid" ]; then
     SERVER_PID=$(cat "$SCRIPT_DIR/.server.pid")
     if kill -0 "$SERVER_PID" 2>/dev/null; then
